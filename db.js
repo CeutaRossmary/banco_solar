@@ -14,20 +14,16 @@ const pool = new Pool({
 
 async function add_usuarios(nombre, balance) {
     const client = await pool.connect();
-    try {
-        if (balance == null) {
-            console.log("Ingrese datos validos ..!")
-            return;
-        }
-        const { rows } = await client.query({
-            text: `insert into usuarios (nombre, balance) values ($1, $2) returning*`,
-            values: [nombre, balance],
-        });
-        return rows[0];
 
-    } catch (err) {
-        console.log(err)
+    if (balance == null) {
+        console.log("Ingrese datos validos ..!")
+        return;
     }
+    const { rows } = await client.query({
+        text: `insert into usuarios (nombre, balance) values ($1, $2) returning*`,
+        values: [nombre, balance],
+    });
+    //return rows[0];
     client.release();
 }
 
@@ -40,39 +36,27 @@ async function get_usuarios() {
 
 async function update_clientes(id, nombre, balance) {
     const client = await pool.connect();
-    try {
-        if (nombre == "") {
-            console.log("Ingrese nombre de usuario")
-            return;
-        }
-        const { rows } = await client.query({
-            text: `update usuarios set  nombre=$2, balance=$3  where id=$1 returning*`,
-            values: [id, nombre, balance],
-        });
-        return rows[0];
-
-    } catch (error) {
-        if (error.code == '22P02') {
-            console.log('No puede existir campos vacios')
-        }
-    }
+    const { rows } = await client.query({
+        text: `update usuarios set  nombre=$2, balance=$3  where id=$1 returning*`,
+        values: [id, nombre, balance],
+    });
+    return rows[0];
     client.release();
 }
 
 async function delete_clientes(id) {
     const client = await pool.connect();
     try {
+        await client.query({
+            text: `delete from transferencias where emisor=$1 or receptor=$1 returning*`,
+            values: [parseInt(id)],
+        });
         const { rows } = await client.query({
             text: `delete from usuarios where id=$1 returning*`,
-            values: [id],
+            values: [parseInt(id)],
         });
-
     } catch (error) {
-        if (error.code == '23503') {
-            console.log('No puede eliminar un cliente que ha realizado una transferencia')
-        } else {
-            console.log(error)
-        }
+        console.log(error)
     }
     client.release();
 }
@@ -124,7 +108,8 @@ async function transferir(nombre_emisor, nombre_receptor, monto) {
 async function mostrarTranferir() {
     const client = await pool.connect();
     const { rows } = await client.query({
-        text: `SELECT fecha, (SELECT nombre FROM usuarios WHERE id = emisor) AS emisor, (SELECT nombre FROM usuarios WHERE id = receptor) AS receptor, monto FROM transferencias`,
+        text: `select transferencias.id, usuarios.nombre, recep.nombre, transferencias.monto,transferencias.fecha from transferencias join usuarios on transferencias.
+        emisor=usuarios.id join usuarios as recep on transferencias.receptor=recep.id`,
         rowMode: "array",
     });
     client.release();

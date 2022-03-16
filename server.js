@@ -22,8 +22,15 @@ app.post("/usuario", async(req, res) => {
     req.on("data", (data) => (body += data));
     req.on("end", async() => {
         body = JSON.parse(body);
-        await add_usuarios(body.nombre, body.balance);
-        res.status(201).json({ todo: "ok" });
+        try {
+            await add_usuarios(body.nombre, body.balance);
+        } catch (error) {
+            if (error.code == '23505') {
+                console.log(error);
+                return res.status(400).send({ mensaje: "este nombre de usuario ya existe" });
+            }
+        }
+        res.json({ todo: 'ok' })
     });
 });
 
@@ -39,10 +46,15 @@ app.put("/usuario", async(req, res) => {
     req.on("end", async() => {
         console.log(body);
         body = JSON.parse(body);
-
-        await update_clientes(query.body.id, body.name, body.balance);
-        res.status(201).json({ todo: "ok" });
-        console.log("base de datos actualizada  ", body);
+        try {
+            await update_clientes(query.body.id, body.name, body.balance);
+        } catch (error) {
+            if (error.code == "22P02") {
+                console.log(error);
+                return res.status(400).send({ mensaje: "No puede existir campos vacios" });
+            }
+        }
+        res.json({ todo: 'ok' })
     });
 });
 
@@ -68,4 +80,4 @@ app.get("/transferencias", async(req, res) => {
     res.json(user);
 });
 
-app.listen(3000, () => console.log("Sservidor ejecutando en puerto 3000"));
+app.listen(3000, () => console.log("Servidor ejecutando en puerto 3000"));
