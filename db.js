@@ -77,7 +77,7 @@ async function transferir(nombre_emisor, nombre_receptor, monto) {
             text: `select * from usuarios where nombre = $1`,
             values: [nombre_receptor],
         });
-        const id_receptor = resp.rows[0].id;
+        const id_receptor = resp.rows[0]
         const mas = resp.rows[0].balance;
         const saldo_receptor = parseInt(monto) + parseInt(mas);
 
